@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบเพิ่มคะแนน</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background: linear-gradient(to bottom, #ffffff, #7c7c7c);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        h2 {
+            font-size: 50px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+            color: #333;
+        }
+        th, td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background: #012f61; color: white; }
+        tr:nth-child(even) { background: #f2f2f2; }
+        tr:hover { background: #ddd; }
+        input, .editable {
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 5px;
+        }
+        button {
+            padding: 12px 18px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            margin: 5px;
+            transition: 0.3s;
+        }
+        .btn-confirm { background: #28a745; }
+        .btn-confirm:hover { background: #218838; }
+        .btn-reset { background: #dc3545; }
+        .btn-reset:hover { background: #dc3545; }
+        .btn-full-reset { background: #dc3545; }
+        .btn-full-reset:hover { background: #b52a37; }
+        .btn-undo { background: #6c757d; }
+        .btn-undo:hover { background: #6c757d; }
+        .btn-home { background: #6c757d; }
+        .btn-home:hover { background: #5a6268; }
+        .btn-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <h2 contenteditable="true" style="color: #333;">ระบบเพิ่มคะแนนนักเรียน</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>เลขที่</th>
+                <th>ชื่อ-นามสกุล</th>
+                <th>คะแนนก่อนหน้า</th>
+                <th>เพิ่ม/ลดคะแนน</th>
+                <th>คะแนนรวม</th>
+                <th>จัดการ</th>
+            </tr>
+        </thead>
+        <tbody id="scoreTable"></tbody>
+    </table>
+    
+    <div class="btn-container">
+        <button class="btn-home" onclick="location.href='index.html'">ย้อนกลับไปหน้าหลัก</button>
+        <button class="btn-full-reset" onclick="resetScores()">รีเซ็ตคะแนนทั้งหมด</button>
+    </div>
+
+    <script>
+        let students = JSON.parse(localStorage.getItem("students")) || 
+                        Array.from({ length: 40 }, (_, i) => ({ id: i + 1, name: `นักเรียน ${i + 1}` }));
+        let scores = JSON.parse(localStorage.getItem("scores")) || {};
+        let previousScores = {};
+        students.forEach(student => scores[student.id] ??= 0);
+
+        function updateTable() {
+            let table = document.getElementById("scoreTable");
+            table.innerHTML = "";
+            students.forEach(student => {
+                let row = table.insertRow();
+                row.insertCell(0).innerText = student.id;
+                
+                let nameCell = row.insertCell(1);
+                let nameInput = document.createElement("span");
+                nameInput.contentEditable = "true";
+                nameInput.classList.add("editable");
+                nameInput.innerText = student.name;
+                nameInput.onblur = () => updateStudentName(student.id, nameInput.innerText);
+                nameCell.appendChild(nameInput);
+                
+                let prevScoreCell = row.insertCell(2);
+                prevScoreCell.innerText = previousScores[student.id]?.toFixed(1) || "-";
+
+                let inputCell = row.insertCell(3);
+                let input = document.createElement("input");
+                input.type = "number";
+                input.step = "0.1";
+                input.placeholder = "0.0";
+                inputCell.appendChild(input);
+
+                let scoreCell = row.insertCell(4);
+                scoreCell.innerText = scores[student.id].toFixed(1);
+                
+                let actionCell = row.insertCell(5);
+                actionCell.classList.add("btn-container");
+                
+                let confirmBtn = document.createElement("button");
+                confirmBtn.innerText = "ยืนยัน";
+                confirmBtn.classList.add("btn-confirm");
+                confirmBtn.onclick = () => {
+                    addScore(student.id, parseFloat(input.value) || 0);
+                    input.value = "";
+                };
+                actionCell.appendChild(confirmBtn);
+
+                let undoBtn = document.createElement("button");
+                undoBtn.innerText = "Undo";
+                undoBtn.classList.add("btn-undo");
+                undoBtn.onclick = () => undoScore(student.id);
+                actionCell.appendChild(undoBtn);
+                
+                let resetBtn = document.createElement("button");
+                resetBtn.innerText = "รีเซ็ต";
+                resetBtn.classList.add("btn-reset");
+                resetBtn.onclick = () => resetScore(student.id);
+                actionCell.appendChild(resetBtn);
+
+                // เพิ่มเหตุการณ์สำหรับการกด Enter
+                input.addEventListener("keydown", function(event) {
+                    if (event.key === "Enter") {
+                        confirmBtn.click();  // ทำการกดปุ่มยืนยัน
+                        event.preventDefault();  // ห้ามการกระทำปกติของ Enter (ไม่ให้ form submit ถ้ามี)
+                    }
+                });
+            });
+        }
+
+        function addScore(id, score) {
+            previousScores[id] = scores[id];
+            scores[id] = parseFloat((scores[id] + score).toFixed(1));
+            localStorage.setItem("scores", JSON.stringify(scores));
+            updateTable();
+        }
+
+        function undoScore(id) {
+            if (previousScores[id] !== undefined) {
+                scores[id] = previousScores[id];
+                localStorage.setItem("scores", JSON.stringify(scores));
+                updateTable();
+            }
+        }
+
+        function resetScore(id) {
+            if (confirm("แน่ใจหรือไม่ว่าต้องการรีเซ็ตคะแนนของนักเรียนนี้?")) {
+                previousScores[id] = scores[id];
+                scores[id] = 0;
+                localStorage.setItem("scores", JSON.stringify(scores));
+                updateTable();
+            }
+        }
+
+        function resetScores() {
+            if (confirm("แน่ใจหรือไม่ว่าต้องการรีเซ็ตคะแนนทั้งหมด?")) {
+                students.forEach(student => {
+                    previousScores[student.id] = scores[student.id];
+                    scores[student.id] = 0;
+                });
+                localStorage.setItem("scores", JSON.stringify(scores));
+                updateTable();
+            }
+        }
+
+        function updateStudentName(id, newName) {
+            students.find(s => s.id === id).name = newName;
+            localStorage.setItem("students", JSON.stringify(students));
+        }
+
+        updateTable();
+    </script>
+</body>
+</html>
