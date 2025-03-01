@@ -84,116 +84,12 @@
         <button class="btn-full-reset" onclick="resetScores()">รีเซ็ตคะแนนทั้งหมด</button>
     </div>
 
-    <script>
-        let students = JSON.parse(localStorage.getItem("students")) || 
-                        Array.from({ length: 40 }, (_, i) => ({ id: i + 1, name: `นักเรียน ${i + 1}` }));
-        let scores = JSON.parse(localStorage.getItem("scores")) || {};
-        let previousScores = {};
-        students.forEach(student => scores[student.id] ??= 0);
+    <script type="module">
+        import { setCollection } from './handle_data.js'; 
 
-        function updateTable() {
-            let table = document.getElementById("scoreTable");
-            table.innerHTML = "";
-            students.forEach(student => {
-                let row = table.insertRow();
-                row.insertCell(0).innerText = student.id;
-                
-                let nameCell = row.insertCell(1);
-                let nameInput = document.createElement("span");
-                nameInput.contentEditable = "true";
-                nameInput.classList.add("editable");
-                nameInput.innerText = student.name;
-                nameInput.onblur = () => updateStudentName(student.id, nameInput.innerText);
-                nameCell.appendChild(nameInput);
-                
-                let prevScoreCell = row.insertCell(2);
-                prevScoreCell.innerText = previousScores[student.id]?.toFixed(1) || "-";
-
-                let inputCell = row.insertCell(3);
-                let input = document.createElement("input");
-                input.type = "number";
-                input.step = "0.1";
-                input.placeholder = "0.0";
-                inputCell.appendChild(input);
-
-                let scoreCell = row.insertCell(4);
-                scoreCell.innerText = scores[student.id].toFixed(1);
-                
-                let actionCell = row.insertCell(5);
-                actionCell.classList.add("btn-container");
-                
-                let confirmBtn = document.createElement("button");
-                confirmBtn.innerText = "ยืนยัน";
-                confirmBtn.classList.add("btn-confirm");
-                confirmBtn.onclick = () => {
-                    addScore(student.id, parseFloat(input.value) || 0);
-                    input.value = "";
-                };
-                actionCell.appendChild(confirmBtn);
-
-                let undoBtn = document.createElement("button");
-                undoBtn.innerText = "Undo";
-                undoBtn.classList.add("btn-undo");
-                undoBtn.onclick = () => undoScore(student.id);
-                actionCell.appendChild(undoBtn);
-                
-                let resetBtn = document.createElement("button");
-                resetBtn.innerText = "รีเซ็ต";
-                resetBtn.classList.add("btn-reset");
-                resetBtn.onclick = () => resetScore(student.id);
-                actionCell.appendChild(resetBtn);
-
-                // เพิ่มเหตุการณ์สำหรับการกด Enter
-                input.addEventListener("keydown", function(event) {
-                    if (event.key === "Enter") {
-                        confirmBtn.click();  // ทำการกดปุ่มยืนยัน
-                        event.preventDefault();  // ห้ามการกระทำปกติของ Enter (ไม่ให้ form submit ถ้ามี)
-                    }
-                });
-            });
-        }
-
-        function addScore(id, score) {
-            previousScores[id] = scores[id];
-            scores[id] = parseFloat((scores[id] + score).toFixed(1));
-            localStorage.setItem("scores", JSON.stringify(scores));
-            updateTable();
-        }
-
-        function undoScore(id) {
-            if (previousScores[id] !== undefined) {
-                scores[id] = previousScores[id];
-                localStorage.setItem("scores", JSON.stringify(scores));
-                updateTable();
-            }
-        }
-
-        function resetScore(id) {
-            if (confirm("แน่ใจหรือไม่ว่าต้องการรีเซ็ตคะแนนของนักเรียนนี้?")) {
-                previousScores[id] = scores[id];
-                scores[id] = 0;
-                localStorage.setItem("scores", JSON.stringify(scores));
-                updateTable();
-            }
-        }
-
-        function resetScores() {
-            if (confirm("แน่ใจหรือไม่ว่าต้องการรีเซ็ตคะแนนทั้งหมด?")) {
-                students.forEach(student => {
-                    previousScores[student.id] = scores[student.id];
-                    scores[student.id] = 0;
-                });
-                localStorage.setItem("scores", JSON.stringify(scores));
-                updateTable();
-            }
-        }
-
-        function updateStudentName(id, newName) {
-            students.find(s => s.id === id).name = newName;
-            localStorage.setItem("students", JSON.stringify(students));
-        }
-
-        updateTable();
+        window.addEventListener('load', function() {
+            setCollection("Room_507");
+        });
     </script>
 </body>
 </html>
