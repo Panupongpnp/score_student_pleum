@@ -1,19 +1,20 @@
 import { db } from "./database.js";
 import { doc, setDoc, updateDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
-let collectionName
-setCollection("scorePage");  // Set the collection based on the page
+let collectionName = getCollectionFromURL();
 
 // Initialize students data
 let students = Array.from({ length: 40 }, (_, i) => ({ id: i + 1, name: `นักเรียน ${i + 1}` }));
 
 // Load score datas
-let scores = JSON.parse(localStorage.getItem("scores")) || {};
+let scores = {};
 // Set previous scores to empty
 let previousScores = {};
 
 // Set score on page to 0
 students.forEach(student => scores[student.id] ??= 0);
+
+updateTable();
 
 // Fetch data from Firestore
 getDataFromDB().then((data) => {
@@ -113,8 +114,20 @@ async function saveDataToDB(studentId, data) {
 
 // Get data from Firestore
 async function getDataFromDB() {
-    const querySnapshot = await getDocs(collection(db, collectionName));
-    return querySnapshot.docs.map(doc => ({ id: parseInt(doc.id), ...doc.data() }));
+    try {
+        const querySnapshot = await getDocs(collection(db, collectionName));
+        
+        if (querySnapshot.empty) {
+            console.warn("No data found in Firestore.");
+        }
+
+        const data = querySnapshot.docs.map(doc => ({ id: parseInt(doc.id), ...doc.data() }));
+        console.log("Fetched data:", data);
+        
+        return data;
+    } catch (error) {
+        console.error("Error fetching data from Firestore:", error);
+    }
 }
 
     // Methods to manage score
@@ -217,6 +230,7 @@ function getTime() {
     return thailandTime
 }
 
-export function setCollection(pageName) {
-    collectionName = pageName
+function getCollectionFromURL() {
+    const match = window.location.pathname.match(/score(\d{3})\.html/);
+    return match ? `Room_${match[1]}` : "defaultCollection";
 }

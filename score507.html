@@ -81,15 +81,9 @@
     
     <div class="btn-container">
         <button class="btn-home" onclick="location.href='index.html'">ย้อนกลับไปหน้าหลัก</button>
-        <button class="btn-full-reset" onclick="resetScores()">รีเซ็ตคะแนนทั้งหมด</button>
+        <button class="btn-full-reset" id="fullResetBtn">รีเซ็ตคะแนนทั้งหมด</button>
     </div>
 
-    <script type="module">
-        import { setCollection } from './handle_data.js'; 
-
-        window.addEventListener('load', function() {
-            setCollection("Room_507");
-        });
-    </script>
+    <script type="module" src="handle_data.js"></script>
 </body>
 </html>
