@@ -31,6 +31,8 @@ getDataFromDB().then((data) => {
 });
 
 function updateTable() {
+    document.getElementById("room").textContent = `ระบบเพิ่มคะแนนนักเรียน - ${collectionName.slice(-3)}`;
+
     let table = document.getElementById("scoreTable");
     table.innerHTML = "";
     students.forEach(student => {
